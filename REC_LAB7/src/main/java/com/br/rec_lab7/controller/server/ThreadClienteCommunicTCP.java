@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+package com.br.rec_lab7.controller.server;
 
-package rec_lab7.controller.server;
-
+import com.br.rec_lab7.model.comunic.Mensagem;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -18,18 +18,20 @@ import org.apache.log4j.Logger;
  *
  * @author Wesklei Migliorini <wesklei.m at gmail dt com>
  */
-public class ThreadClienteCommunic extends Thread {
+public class ThreadClienteCommunicTCP extends Thread {
 
-    private final Logger logger = Logger.getLogger(ThreadClienteCommunic.class.getName());
+    private final Logger logger = Logger.getLogger(ThreadClienteCommunicTCP.class.getName());
 
+    private String logMensagens;
     private ObjectOutputStream outToCleinte;
     private ObjectInputStream inFromCliente;
     private final Socket clienteSocket;
-   // private final ClienteCommand ClienteCmd;
+    private final ServerCommand comandosCliente;
 
-    public ThreadClienteCommunic(Socket clienteSocket) throws IOException {
+    public ThreadClienteCommunicTCP(Socket clienteSocket) throws IOException {
         this.clienteSocket = clienteSocket;
-       // this.ClienteCmd = new ClienteCommand();
+        this.comandosCliente = new ServerCommand();
+        logMensagens = "\n";
     }
 
     @Override
@@ -39,29 +41,32 @@ public class ThreadClienteCommunic extends Thread {
         try {
 
             while (true) {
-                logger.debug("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
-
                 comandoDoCliente = recebeDoCliente();//le do cliente a solicitacao
 
                 if (comandoDoCliente != null) {
-                    if (comandoDoCliente instanceof String) {
-                        logger.debug("Comandos do Cliente: " + comandoDoCliente);
+                    logger.debug("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
+                    logarMensagem("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
 
-                        String mensagemString = (String) comandoDoCliente;
-                        //TODO
-                        retornoParaCliente = null;//(Object) comandosCliente.parseMensagem(mensagemString);
+                    if (comandoDoCliente instanceof Mensagem) {
+                        logger.debug("Comandos do Cliente: " + comandoDoCliente.toString());
+                        logarMensagem("Comandos do Cliente: " + comandoDoCliente.toString());
 
-                        logger.debug("Comandos para o Cliente: " + retornoParaCliente);
+                        retornoParaCliente = (Object) comandosCliente.parseMensagem(comandoDoCliente);
+
+                        logger.debug("Comandos para o Cliente: " + retornoParaCliente.toString());
+                        logarMensagem("Comandos para o Cliente: " + retornoParaCliente.toString());
                         if (!enviaParaCliente(retornoParaCliente)) {
                             //ocorreu algum problema
                             break;
                         }
 
-                    }else if (inFromCliente.read() == -1) {//conexao fechou
-                        logger.debug("Cleinte fechou a conexao");
+                    } else if (inFromCliente.read() == -1) {//conexao fechou
+                        logger.debug("Cliente fechou a conexao");
+                        logarMensagem("Cliente fechou a conexao");
                         break;
                     } else {
                         logger.debug("Recebeu comando do Cliente null");
+                        logarMensagem("Recebeu comando do Cliente null");
                         break;
                     }
                 }
@@ -70,11 +75,14 @@ public class ThreadClienteCommunic extends Thread {
             fecharConexao(); //encerra tudo
         } catch (EOFException ex) {
             logger.log(Level.INFO, "Cliente fechou a conexao");
+            logarMensagem("Cliente fechou a conexao");
         } catch (IOException ex) {
             logger.log(Level.ERROR, "Erro na conexao com o cliente", ex);
+            logarMensagem("Erro na conexao com o cliente");
         } catch (ClassNotFoundException ex) {
             logger.log(Level.ERROR, "Erro na conversao do objeto mensagem recebido do ciente", ex);
-        } 
+            logarMensagem("Erro na conversao do objeto mensagem recebido do ciente");
+        }
     }
 
     private boolean enviaParaCliente(Object o) throws IOException {
@@ -95,7 +103,6 @@ public class ThreadClienteCommunic extends Thread {
     private Object recebeDoCliente() throws IOException, ClassNotFoundException {
         if (inFromCliente == null && clienteSocket != null) { //precisa checar sempre
             inFromCliente = new ObjectInputStream(clienteSocket.getInputStream());
-
         }
 
         if (inFromCliente != null) {
@@ -106,18 +113,23 @@ public class ThreadClienteCommunic extends Thread {
     }
 
     private void fecharConexao() throws IOException {
-        inFromCliente.close();
-        outToCleinte.close();
-        clienteSocket.close();
-
         if (inFromCliente != null) {
             inFromCliente.close();
         }
         if (outToCleinte != null) {
+            outToCleinte.flush();
             outToCleinte.close();
         }
         if (clienteSocket != null && clienteSocket.isConnected()) {
             clienteSocket.close();
         }
+    }
+
+    private void logarMensagem(String msg) {
+        logMensagens += "TCP: " + msg + "\n";
+    }
+
+    public String getLogMensagens() {
+        return logMensagens;
     }
 }
