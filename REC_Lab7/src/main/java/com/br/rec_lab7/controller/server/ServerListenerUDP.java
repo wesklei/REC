@@ -5,14 +5,10 @@
  */
 package com.br.rec_lab7.controller.server;
 
-import com.br.rec_lab7.controller.CalculoTempo;
-import com.br.rec_lab7.controller.Fibonacci;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.JTextArea;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -35,6 +31,7 @@ public class ServerListenerUDP extends Thread {
      * the port to list and how much values will start
      *
      * @param port
+     * @param ip
      * @param logMensagens
      */
     public ServerListenerUDP(Integer port, String ip, JTextArea logMensagens) {
@@ -47,15 +44,14 @@ public class ServerListenerUDP extends Thread {
     public void run() {
         try {
             InetAddress addr = InetAddress.getByName(ip);
-            welcomeSocket = new DatagramSocket(port,addr);
-            
+            welcomeSocket = new DatagramSocket(port, addr);
+
             byte[] incomingData = new byte[1024];
 
             isClossed = false;
             logger.debug("=>UDP: Iniciando thread de escuta para comunicacao com o cliente ...");
             logMensagens.setText(logMensagens.getText() + "\n" + "UDP: =>Iniciando thread de escuta para comunicacao com o cliente ...");
 
-            List<ThreadClienteCommunicUDP> serversThreads = new ArrayList<ThreadClienteCommunicUDP>();
             while (!isClossed) {
 
                 DatagramPacket incomingPacket = new DatagramPacket(incomingData, incomingData.length);
@@ -63,29 +59,15 @@ public class ServerListenerUDP extends Thread {
                 byte[] data = incomingPacket.getData();
 
                 if (data != null) {
-                    ThreadClienteCommunicUDP threadCliente = new ThreadClienteCommunicUDP(incomingPacket, welcomeSocket);
+                    //new socket created with random port for thread
+                    //precisa trocar a porta para a thread poder "manter uma conexao"
+                    //com o cliente, se nao todos os clientes irao usar o mesmo socket
+                    //e dara problema
+                    DatagramSocket threadSocket = new DatagramSocket();
+                    
+                    ThreadClienteCommunicUDP threadCliente = new ThreadClienteCommunicUDP(incomingPacket, threadSocket, logMensagens);
                     threadCliente.start();
-
-                    serversThreads.add(threadCliente);
-
                 }
-                boolean isAlive = true;
-                while (isAlive) {
-                    isAlive = false;
-                    for (ThreadClienteCommunicUDP c : serversThreads) {
-                        if (c.isAlive()) {
-                            isAlive = true;
-                        }
-                    }
-                }
-
-                for (ThreadClienteCommunicUDP c : serversThreads) {
-                    logMensagens.setText(logMensagens.getText() + "\n " + c.getLogMensagens());
-                }
-                logMensagens.setText(logMensagens.getText() + "\n " + "UDP:  Tempo medio decorrido: " + CalculoTempo.getMedia() + " ms");
-
-                logger.info("UDP: Tempo medio decorrido: " + CalculoTempo.getMedia() + " ms");
-                serversThreads = new ArrayList<ThreadClienteCommunicUDP>();
             }
 
         } catch (IOException ex) {

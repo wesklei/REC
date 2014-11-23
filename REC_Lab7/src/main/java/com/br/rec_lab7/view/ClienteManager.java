@@ -7,6 +7,8 @@ package com.br.rec_lab7.view;
 import com.br.rec_lab7.controller.CalculoTempo;
 import com.br.rec_lab7.controller.cliente.ThreadClienteConnectorTCP;
 import com.br.rec_lab7.controller.cliente.ThreadClienteConnectorUDP;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
@@ -27,7 +29,22 @@ public class ClienteManager extends javax.swing.JFrame {
      */
     public ClienteManager() {
         initComponents();
+        jTfTimeOut.setEnabled(false);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+
+        jCheckBox1.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    jTfTimeOut.setEnabled(true);
+                } else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                    jTfTimeOut.setEnabled(false);
+                }
+
+                validate();
+                repaint();
+            }
+        });
 
         addWindowListener(new WindowAdapter() {
             @Override
@@ -62,6 +79,8 @@ public class ClienteManager extends javax.swing.JFrame {
         jLabel4 = new javax.swing.JLabel();
         jTfQuantidadeCliente = new javax.swing.JTextField();
         jTfFibonacciLimite = new javax.swing.JTextField();
+        jLabel8 = new javax.swing.JLabel();
+        jTfQtdMsg = new javax.swing.JTextField();
         jPanel5 = new javax.swing.JPanel();
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
@@ -71,6 +90,7 @@ public class ClienteManager extends javax.swing.JFrame {
         jLabel6 = new javax.swing.JLabel();
         jTfTimeOut = new javax.swing.JTextField();
         jLabel7 = new javax.swing.JLabel();
+        jCheckBox1 = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -140,13 +160,17 @@ public class ClienteManager extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jLabel3.setText("Quantidade de Clientes:");
+        jLabel3.setText("Quantidade de Threads:");
 
         jLabel4.setText("Limite de posições da serie Fibonacci:");
 
         jTfQuantidadeCliente.setText("10");
 
         jTfFibonacciLimite.setText("10");
+
+        jLabel8.setText("Quantidade de Mensagens:");
+
+        jTfQtdMsg.setText("10");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -156,9 +180,11 @@ public class ClienteManager extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel3)
-                    .addComponent(jLabel4))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel8))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jTfQtdMsg, javax.swing.GroupLayout.DEFAULT_SIZE, 355, Short.MAX_VALUE)
                     .addComponent(jTfFibonacciLimite, javax.swing.GroupLayout.DEFAULT_SIZE, 355, Short.MAX_VALUE)
                     .addComponent(jTfQuantidadeCliente))
                 .addContainerGap())
@@ -170,11 +196,15 @@ public class ClienteManager extends javax.swing.JFrame {
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(jTfQuantidadeCliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel8)
+                    .addComponent(jTfQtdMsg, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(jTfFibonacciLimite, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         jButton1.setText("Cancelar");
@@ -200,7 +230,7 @@ public class ClienteManager extends javax.swing.JFrame {
                 .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(59, 59, 59)
                 .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(194, Short.MAX_VALUE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -224,6 +254,13 @@ public class ClienteManager extends javax.swing.JFrame {
 
         jLabel7.setText("Tempo de Timeout (ms):");
 
+        jCheckBox1.setText("Ativar");
+        jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBox1ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -241,9 +278,12 @@ public class ClienteManager extends javax.swing.JFrame {
                             .addComponent(jLabel7)
                             .addComponent(jLabel6))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jTfTimeOut)
-                            .addComponent(jTfClienteIdentificador, javax.swing.GroupLayout.DEFAULT_SIZE, 355, Short.MAX_VALUE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jTfClienteIdentificador, javax.swing.GroupLayout.PREFERRED_SIZE, 355, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                .addComponent(jCheckBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(jTfTimeOut)))
                         .addContainerGap())))
         );
         layout.setVerticalGroup(
@@ -251,19 +291,20 @@ public class ClienteManager extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jLabel6)
                     .addComponent(jTfClienteIdentificador, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jTfTimeOut, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel7))
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 339, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                    .addComponent(jLabel7)
+                    .addComponent(jCheckBox1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -287,11 +328,12 @@ public class ClienteManager extends javax.swing.JFrame {
         int clienteMax = Integer.valueOf(jTfQuantidadeCliente.getText());
         int fibonacciLimite = Integer.valueOf(jTfFibonacciLimite.getText());
         int timeout = Integer.valueOf(jTfTimeOut.getText());
+        int qtdMsg = Integer.valueOf(jTfQtdMsg.getText());
 
         if (jRbTCP.isSelected()) { //TCP
             List<ThreadClienteConnectorTCP> clientesThreads = new ArrayList<ThreadClienteConnectorTCP>();
             for (int i = 0; i < clienteMax; i++) {
-                ThreadClienteConnectorTCP clienteConnector = new ThreadClienteConnectorTCP(ip, porta, fibonacciLimite, identificador, i,timeout);
+                ThreadClienteConnectorTCP clienteConnector = new ThreadClienteConnectorTCP(ip, porta, fibonacciLimite, identificador, i, timeout, qtdMsg, jCheckBox1.isSelected());
                 clienteConnector.start();
                 clientesThreads.add(clienteConnector);
             }
@@ -316,7 +358,7 @@ public class ClienteManager extends javax.swing.JFrame {
         } else if (jRbUDP.isSelected()) { //UDP
             List<ThreadClienteConnectorUDP> clientesThreads = new ArrayList<ThreadClienteConnectorUDP>();
             for (int i = 0; i < clienteMax; i++) {
-                ThreadClienteConnectorUDP clienteConnector = new ThreadClienteConnectorUDP(ip, porta, fibonacciLimite, identificador, i, timeout);
+                ThreadClienteConnectorUDP clienteConnector = new ThreadClienteConnectorUDP(ip, porta, fibonacciLimite, identificador, i, timeout, qtdMsg, jCheckBox1.isSelected());
                 clienteConnector.start();
                 clientesThreads.add(clienteConnector);
             }
@@ -339,8 +381,12 @@ public class ClienteManager extends javax.swing.JFrame {
 
             logger.info("Tempo medio decorrido: " + CalculoTempo.getMedia() + " ms");
         }
-
+        CalculoTempo.zerarTempo();
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
+
+    }//GEN-LAST:event_jCheckBox1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -384,6 +430,7 @@ public class ClienteManager extends javax.swing.JFrame {
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
+    private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -391,6 +438,7 @@ public class ClienteManager extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel5;
@@ -402,6 +450,7 @@ public class ClienteManager extends javax.swing.JFrame {
     private javax.swing.JTextField jTfFibonacciLimite;
     private javax.swing.JTextField jTfIP;
     private javax.swing.JTextField jTfPorta;
+    private javax.swing.JTextField jTfQtdMsg;
     private javax.swing.JTextField jTfQuantidadeCliente;
     private javax.swing.JTextField jTfTimeOut;
     // End of variables declaration//GEN-END:variables

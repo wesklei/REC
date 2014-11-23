@@ -34,6 +34,7 @@ public class ServerListenerTCP extends Thread {
      * the port to list and how much values will start
      *
      * @param port
+     * @param ip
      * @param logMensagens
      */
     public ServerListenerTCP(Integer port, String ip, JTextArea logMensagens) {
@@ -52,36 +53,15 @@ public class ServerListenerTCP extends Thread {
             logger.debug("TCP: =>Iniciando thread de escuta para comunicacao com o cliente ...");
             logMensagens.setText(logMensagens.getText() + "\n" + "=>Iniciando thread de escuta para comunicacao com o cliente ...");
 
-            List<ThreadClienteCommunicTCP> serversThreads = new ArrayList<ThreadClienteCommunicTCP>();
             while (!isClossed) {
 
                 Socket connectionSocket = welcomeSocket.accept();
 
                 if (connectionSocket != null) {
-                    ThreadClienteCommunicTCP threadCliente = new ThreadClienteCommunicTCP(connectionSocket);
+                    ThreadClienteCommunicTCP threadCliente = new ThreadClienteCommunicTCP(connectionSocket, logMensagens);
                     threadCliente.start();
-
-                    serversThreads.add(threadCliente);
-
                 }
-                boolean isAlive = true;
-                while (isAlive) {
-                    isAlive = false;
-                    for (ThreadClienteCommunicTCP c : serversThreads) {
-                        if (c.isAlive()) {
-                            isAlive = true;
-                        }
-                    }
-                }
-
-                for (ThreadClienteCommunicTCP c : serversThreads) {
-                    logMensagens.setText(logMensagens.getText() + "\nTCP: " + c.getLogMensagens());
-                }
-                logMensagens.setText(logMensagens.getText() + "\n " + "TCP: Tempo medio decorrido: " + CalculoTempo.getMedia() + " ms");
-
-                logger.info("TCP: Tempo medio decorrido: " + CalculoTempo.getMedia() + " ms");
-                serversThreads = new ArrayList<ThreadClienteCommunicTCP>();
-            }
+             }
 
         } catch (IOException ex) {
             if (!isClossed) { //se fechou ignora os erros

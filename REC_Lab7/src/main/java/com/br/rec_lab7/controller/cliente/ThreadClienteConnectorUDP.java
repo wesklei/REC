@@ -28,6 +28,8 @@ public class ThreadClienteConnectorUDP extends Thread {
     private String ip;
     private Integer port;
     private int limiteFibonacci;
+    private final boolean isTimeoutEnabled;
+    private final int qtdMsg;
     private int timeout;
     private String identificador; //identifica o clienet
     private ClienteCommand clienteCommand;
@@ -39,18 +41,20 @@ public class ThreadClienteConnectorUDP extends Thread {
 
     private final Logger logger = Logger.getLogger(ThreadClienteConnectorUDP.class.getName());
 
-    public ThreadClienteConnectorUDP(String ip, Integer port, int limiteFibonacci, String identificador, int codigoThread, int timeout) {
-        try {
-            this.ip = ip;
-            this.port = port;
-            this.clienteCommand = new ClienteCommand();
-            this.limiteFibonacci = limiteFibonacci;
-            this.timeout = timeout;
-            this.identificador = identificador;
-            this.codigoThread = codigoThread;
-            this.inetAdress = InetAddress.getByName(ip);
+    public ThreadClienteConnectorUDP(String ip, Integer port, int limiteFibonacci, String identificador, int codigoThread, int timeout, int qtdMsg, boolean isTimeoutEnabled) {
+        this.ip = ip;
+        this.port = port;
+        this.clienteCommand = new ClienteCommand();
+        this.limiteFibonacci = limiteFibonacci;
+        this.timeout = timeout;
+        this.identificador = identificador;
+        this.codigoThread = codigoThread;
+        this.qtdMsg = qtdMsg;
+        this.isTimeoutEnabled = isTimeoutEnabled;
+        logMensagens = "Log para Cliente '" + identificador + "' na thread '" + codigoThread + "'\n";
 
-            logMensagens = "Log para Cliente '" + identificador + "' na thread '" + codigoThread + "'\n";
+        try {
+            this.inetAdress = InetAddress.getByName(ip);
         } catch (UnknownHostException ex) {
             logarMensagem("Erro na conexao do cliente com o servidor durante a resolucao do ip");
             logger.error("Erro na conexao do cliente com o servidor durante a resolucao do ip", ex);
@@ -62,30 +66,32 @@ public class ThreadClienteConnectorUDP extends Thread {
         logger.debug("=>Iniciando comunicacao com o servidor ");
         logarMensagem("=>Iniciando comunicacao com o servidor ");
         long startTime = System.currentTimeMillis();
+        String msgRetorno;
+
         try {
-            String msgRetorno;
 
             //estabelece a conexao
             communicSocket = new DatagramSocket();
-            communicSocket.setSoTimeout(1000);
-
-            Object objToServer = clienteCommand.buildMessage(limiteFibonacci, codigoThread, identificador);
-            enviaParaServidor(objToServer);
-
-            Object retorno = recebeDoServidor();
-
-            if (retorno != null) {
-                msgRetorno = clienteCommand.parseMensagem(retorno);
-                logger.info(retorno.toString());
-                logarMensagem(retorno.toString());
-            } else {
-                logger.error("Servidor retornou null!");
-                logarMensagem("Servidor retornou null!");
+            if (isTimeoutEnabled) {
+                communicSocket.setSoTimeout(timeout);
             }
 
-            logger.info("Terminando conexao com o servidor!");
-            logarMensagem("Terminando conexao com o servidor!");
-            fecharConexao(); //terminou
+            for (int i = 0; i < qtdMsg; i++) {
+
+                Object objToServer = clienteCommand.buildMessage(limiteFibonacci, codigoThread, identificador);
+                enviaParaServidor(objToServer);
+
+                Object retorno = recebeDoServidor();
+
+                if (retorno != null) {
+                    msgRetorno = clienteCommand.parseMensagem(retorno);
+                    logger.info(retorno.toString());
+                    logarMensagem(retorno.toString());
+                } else {
+                    logger.error("Servidor retornou null!");
+                    logarMensagem("Servidor retornou null!");
+                }
+            }
 
         } catch (IOException ex) {
             logger.error("Erro na conexao do cliente com o servidor", ex);
@@ -94,9 +100,20 @@ public class ThreadClienteConnectorUDP extends Thread {
             logarMensagem("Erro na conexao do cliente com o servidor durante a leitura da classe do objeto");
             logger.error("Erro na conexao do cliente com o servidor durante a leitura da classe do objeto", ex);
         }
+
+        logger.info("Terminando conexao com o servidor!");
+        logarMensagem("Terminando conexao com o servidor!");
+        try {
+            fecharConexao(); //terminou
+        } catch (IOException ex) {
+            logger.error("Erro na conexao do cliente com o servidor", ex);
+            logarMensagem("Erro na conexao do cliente com o servidor");
+        }
+        
         long endtime = System.currentTimeMillis();
 
         long totalTime = endtime - startTime;
+
         CalculoTempo.addNovoTempo(totalTime);
         logger.info("Tempo decorrido no cliente " + identificador + " na thread " + codigoThread + " eh: " + totalTime + " ms");
         logarMensagem("Tempo decorrido no cliente " + identificador + " na thread " + codigoThread + " eh: " + totalTime + " ms");
@@ -122,12 +139,14 @@ public class ThreadClienteConnectorUDP extends Thread {
     }
 
     private Object recebeDoServidor() throws IOException, ClassNotFoundException {
-        //if (inFromCliente == null && pacoteRecebido != null) { //precisa checar sempre
         byte[] incomingData = new byte[1024];
 
         DatagramPacket incomingPacket = new DatagramPacket(incomingData, incomingData.length);
 
-        communicSocket.receive(incomingPacket);
+        communicSocket.receive(incomingPacket); 
+        port = incomingPacket.getPort(); // precisa fazer isso, pois como eh multithread
+        //o servidor ira retornar em outra porta, e o cliente se precisar mandar msg
+        //para o mesmo socket do server, percisa pegar a porta q o server usou
         ByteArrayInputStream baos = new ByteArrayInputStream(incomingData);
         ObjectInputStream oos = new ObjectInputStream(baos);
         return oos.readObject();
@@ -141,9 +160,11 @@ public class ThreadClienteConnectorUDP extends Thread {
             outToServer.flush();
             outToServer.close();
         }
-        if (communicSocket != null && communicSocket.isConnected()) {
+        if (communicSocket != null) {
             communicSocket.close();
         }
+        
+        interrupt();
     }
 
     private void logarMensagem(String msg) {

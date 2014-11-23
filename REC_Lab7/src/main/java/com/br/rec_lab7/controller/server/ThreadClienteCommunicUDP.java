@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import javax.swing.JTextArea;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -26,79 +27,95 @@ public class ThreadClienteCommunicUDP extends Thread {
 
     private final Logger logger = Logger.getLogger(ThreadClienteCommunicUDP.class.getName());
 
-    private String logMensagens;
+    private final JTextArea logMensagens;
     private ObjectOutputStream outToCleinte;
     private ObjectInputStream inFromCliente;
     private final DatagramPacket pacoteRecebido;
     private final DatagramSocket datagramSocket;
     private byte[] data;
+    private boolean isAlive;
     private final InetAddress ip;
     private final Integer portRecebido;
     private final ServerCommand comandosCliente;
 
-    public ThreadClienteCommunicUDP(DatagramPacket pacoteRecebido, DatagramSocket datagramSocket) throws IOException {
+    public ThreadClienteCommunicUDP(DatagramPacket pacoteRecebido, DatagramSocket datagramSocket, JTextArea logMensagens) throws IOException {
         this.pacoteRecebido = pacoteRecebido;
         this.datagramSocket = datagramSocket;
         this.comandosCliente = new ServerCommand();
         this.ip = pacoteRecebido.getAddress();
         this.portRecebido = pacoteRecebido.getPort();
-        logMensagens = "\n";
+        this.logMensagens = logMensagens;
         this.data = pacoteRecebido.getData(); //leu primeiro na outra thread
+
+        logger.debug("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
+        logarMensagem("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
     }
 
     @Override
     public void run() {
         Object comandoDoCliente;
         Object retornoParaCliente;
-        try {
 
-            comandoDoCliente = getObjectLido();
+        isAlive = true;
+        while (isAlive) {
+            try {
+                comandoDoCliente = getObjectLido();
 
-            if (comandoDoCliente != null) {
+                if (comandoDoCliente != null) {
 
-                logger.debug("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
-                logarMensagem("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
-                if (comandoDoCliente instanceof Mensagem) {
-                    logger.debug("Comandos do Cliente: " + comandoDoCliente.toString());
-                    logarMensagem("Comandos do Cliente: " + comandoDoCliente.toString());
+                    if (comandoDoCliente instanceof Mensagem) {
+                        logger.debug("Comandos do Cliente: " + comandoDoCliente.toString());
+                        logarMensagem("Comandos do Cliente: " + comandoDoCliente.toString());
 
-                    retornoParaCliente = (Object) comandosCliente.parseMensagem(comandoDoCliente);
+                        retornoParaCliente = (Object) comandosCliente.parseMensagem(comandoDoCliente);
 
-                    logger.debug("Comandos para o Cliente: " + retornoParaCliente.toString());
-                    logarMensagem("Comandos para o Cliente: " + retornoParaCliente.toString());
-                    if (!enviaParaCliente(retornoParaCliente)) {
-                        logger.debug("Erro enquanto envia para o cliente");
-                        logarMensagem("Erro enquanto envia para o cliente");
+                        logger.debug("Comandos para o Cliente: " + retornoParaCliente.toString());
+                        logarMensagem("Comandos para o Cliente: " + retornoParaCliente.toString());
+                        if (!enviaParaCliente(retornoParaCliente)) {
+                            logger.debug("Erro enquanto envia para o cliente");
+                            logarMensagem("Erro enquanto envia para o cliente");
 
+                        }
+
+                    } else if (inFromCliente.read() == -1) {//conexao fechou
+                        logger.debug("Cliente fechou a conexao");
+                        logarMensagem("Cliente fechou a conexao");
+                        isAlive = false;
+                        break;
+                    } else {
+                        logger.debug("Recebeu comando do Cliente null");
+                        logarMensagem("Recebeu comando do Cliente null");
+                        isAlive = false;
+                        break;
                     }
-
-                } else if (inFromCliente.read() == -1) {//conexao fechou
-                    logger.debug("Cliente fechou a conexao");
-                    logarMensagem("Cliente fechou a conexao");
-
-                } else {
-                    logger.debug("Recebeu comando do Cliente null");
-                    logarMensagem("Recebeu comando do Cliente null");
-
                 }
-            }
 
+                recebeDoCliente();
+                
+            } catch (EOFException ex) {
+                logger.log(Level.INFO, "Cliente fechou a conexao");
+                logarMensagem("Cliente fechou a conexao");
+                isAlive = false;
+            } catch (IOException ex) {
+                logger.log(Level.ERROR, "Erro na conexao com o cliente", ex);
+                logarMensagem("Erro na conexao com o cliente");
+                isAlive = false;
+            } catch (ClassNotFoundException ex) {
+                logger.log(Level.ERROR, "Erro na conversao do objeto mensagem recebido do ciente", ex);
+                logarMensagem("Erro na conversao do objeto mensagem recebido do ciente");
+                isAlive = false;
+            }
+        }
+
+        try {
             fecharConexao(); //encerra tudo
-        } catch (EOFException ex) {
-            logger.log(Level.INFO, "Cliente fechou a conexao");
-            logarMensagem("Cliente fechou a conexao");
         } catch (IOException ex) {
             logger.log(Level.ERROR, "Erro na conexao com o cliente", ex);
             logarMensagem("Erro na conexao com o cliente");
-        } catch (ClassNotFoundException ex) {
-            logger.log(Level.ERROR, "Erro na conversao do objeto mensagem recebido do ciente", ex);
-            logarMensagem("Erro na conversao do objeto mensagem recebido do ciente");
         }
     }
 
     private boolean enviaParaCliente(Object o) throws IOException {
-        //if (outToCleinte == null && clienteSocket != null) { //precisa checar sempre
-
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         outToCleinte = new ObjectOutputStream(outputStream);
         outToCleinte.writeObject(o);
@@ -135,13 +152,20 @@ public class ThreadClienteCommunicUDP extends Thread {
             outToCleinte.flush();
             outToCleinte.close();
         }
+        
+        isAlive = false;
+        interrupt();
     }
 
     private void logarMensagem(String msg) {
-        logMensagens += "UDP: " + msg + "\n";
+        logMensagens.setText(logMensagens.getText() + "UDP: " + msg + "\n");
     }
 
-    public String getLogMensagens() {
-        return logMensagens;
+    public boolean isIsAlive() {
+        return isAlive;
+    }
+
+    public void setIsAlive(boolean isAlive) {
+        this.isAlive = isAlive;
     }
 }

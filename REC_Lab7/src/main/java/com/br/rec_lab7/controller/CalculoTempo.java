@@ -14,10 +14,14 @@ import java.util.List;
  */
 public class CalculoTempo {
 
-    private static final List<Long> tempos = new ArrayList<Long>();;
+    private static final List<Long> tempos = new ArrayList<Long>();
 
     public synchronized static void addNovoTempo(long duracao) {
         tempos.add(duracao);
+    }
+    
+    public synchronized static void zerarTempo(){
+        tempos.clear();
     }
 
     public synchronized static long getMedia() {

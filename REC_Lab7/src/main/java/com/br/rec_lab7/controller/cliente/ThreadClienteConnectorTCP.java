@@ -25,6 +25,8 @@ public class ThreadClienteConnectorTCP extends Thread {
     private final Integer port;
     private final int limiteFibonacci;
     private final int timeout;
+    private final int qtdMsg;
+    private final boolean isTimeoutEnabled;
     private final String identificador; //identifica o clienet
     private final ClienteCommand clienteCommand;
     private final int codigoThread; //identifica a thread
@@ -34,7 +36,7 @@ public class ThreadClienteConnectorTCP extends Thread {
 
     private final Logger logger = Logger.getLogger(ThreadClienteConnectorTCP.class.getName());
 
-    public ThreadClienteConnectorTCP(String ip, Integer port, int limiteFibonacci, String identificador, int codigoThread, int timeout) {
+    public ThreadClienteConnectorTCP(String ip, Integer port, int limiteFibonacci, String identificador, int codigoThread, int timeout, int qtdMsg, boolean isTimeoutEnabled) {
         this.ip = ip;
         this.port = port;
         this.clienteCommand = new ClienteCommand();
@@ -42,6 +44,8 @@ public class ThreadClienteConnectorTCP extends Thread {
         this.timeout = timeout;
         this.identificador = identificador;
         this.codigoThread = codigoThread;
+        this.qtdMsg = qtdMsg;
+        this.isTimeoutEnabled = isTimeoutEnabled;
 
         logMensagens = "Log para Cliente '" + identificador + "' na thread '" + codigoThread + "'\n";
     }
@@ -51,39 +55,49 @@ public class ThreadClienteConnectorTCP extends Thread {
         logger.debug("=>Iniciando comunicacao com o servidor ");
         logarMensagem("=>Iniciando comunicacao com o servidor ");
         long startTime = System.currentTimeMillis();
+        String msgRetorno;
+
         try {
-            String msgRetorno;
 
             //estabelece a conexao
             communicSocket = new Socket();
             SocketAddress sockaddr = new InetSocketAddress(ip, port);
-            communicSocket.connect(sockaddr, timeout);//define 10s de timeout
-
-
-            Object objToServer = clienteCommand.buildMessage(limiteFibonacci, codigoThread, identificador);
-            enviaParaServidor(objToServer);
-
-            Object retorno = recebeDoServidor();
-
-            if (retorno != null) {
-                msgRetorno = clienteCommand.parseMensagem(retorno);
-                logger.info(retorno.toString());
-                logarMensagem(retorno.toString());
+            if (isTimeoutEnabled) {
+                communicSocket.connect(sockaddr, timeout);//define de timeout
             } else {
-                logger.error("Servidor retornou null!");
-                logarMensagem("Servidor retornou null!");
+                communicSocket.connect(sockaddr);
             }
+            for (int i = 0; i < qtdMsg; i++) {
 
-            logger.info("Terminando conexao com o servidor!");
-            logarMensagem("Terminando conexao com o servidor!");
-            fecharConexao(); //terminou
+                Object objToServer = clienteCommand.buildMessage(limiteFibonacci, codigoThread, identificador);
+                enviaParaServidor(objToServer);
 
+                Object retorno = recebeDoServidor();
+
+                if (retorno != null) {
+                    msgRetorno = clienteCommand.parseMensagem(retorno);
+                    logger.info(retorno.toString());
+                    logarMensagem(retorno.toString());
+                } else {
+                    logger.error("Servidor retornou null!");
+                    logarMensagem("Servidor retornou null!");
+                }
+
+            }
         } catch (IOException ex) {
             logger.error("Erro na conexao do cliente com o servidor", ex);
             logarMensagem("Erro na conexao do cliente com o servidor");
         } catch (ClassNotFoundException ex) {
             logarMensagem("Erro na conexao do cliente com o servidor durante a leitura da classe do objeto");
             logger.error("Erro na conexao do cliente com o servidor durante a leitura da classe do objeto", ex);
+        }
+        logger.info("Terminando conexao com o servidor!");
+        logarMensagem("Terminando conexao com o servidor!");
+        try {
+            fecharConexao(); //terminou
+        } catch (IOException ex) {
+            logger.error("Erro na conexao do cliente com o servidor", ex);
+            logarMensagem("Erro na conexao do cliente com o servidor");
         }
         long endtime = System.currentTimeMillis();
 
@@ -129,7 +143,7 @@ public class ThreadClienteConnectorTCP extends Thread {
             outToServer.flush();
             outToServer.close();
         }
-        if (communicSocket != null && communicSocket.isConnected()) {
+        if (communicSocket != null) {
             communicSocket.close();
         }
     }

@@ -11,10 +11,8 @@ package com.br.rec_lab7.main;
  */
 public class Main {
     public static void main(String argv[]){
-       // Conexao conexao = new Conexao();
-        //conexao.start();
-        SplashScreen splash = new SplashScreen(5000);
-        splash.shows();
+      //  SplashScreen splash = new SplashScreen(1000);
+       // splash.shows();
 
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override

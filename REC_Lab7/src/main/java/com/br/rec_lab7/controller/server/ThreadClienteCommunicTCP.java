@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import javax.swing.JTextArea;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -22,30 +23,33 @@ public class ThreadClienteCommunicTCP extends Thread {
 
     private final Logger logger = Logger.getLogger(ThreadClienteCommunicTCP.class.getName());
 
-    private String logMensagens;
     private ObjectOutputStream outToCleinte;
     private ObjectInputStream inFromCliente;
+    private boolean isAlive;
     private final Socket clienteSocket;
     private final ServerCommand comandosCliente;
+    private final JTextArea logMensagens;
 
-    public ThreadClienteCommunicTCP(Socket clienteSocket) throws IOException {
+    public ThreadClienteCommunicTCP(Socket clienteSocket, JTextArea logMensagens) throws IOException {
         this.clienteSocket = clienteSocket;
         this.comandosCliente = new ServerCommand();
-        logMensagens = "\n";
+        this.logMensagens = logMensagens;
+
+        logger.debug("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
+        logarMensagem("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
     }
 
     @Override
     public void run() {
         Object comandoDoCliente;
         Object retornoParaCliente;
-        try {
 
-            while (true) {
+        isAlive = true;
+        while (isAlive) {
+            try {
                 comandoDoCliente = recebeDoCliente();//le do cliente a solicitacao
 
                 if (comandoDoCliente != null) {
-                    logger.debug("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
-                    logarMensagem("Cliente Conectou! Thread de comunicacao com cliente esperando dados ...");
 
                     if (comandoDoCliente instanceof Mensagem) {
                         logger.debug("Comandos do Cliente: " + comandoDoCliente.toString());
@@ -57,31 +61,46 @@ public class ThreadClienteCommunicTCP extends Thread {
                         logarMensagem("Comandos para o Cliente: " + retornoParaCliente.toString());
                         if (!enviaParaCliente(retornoParaCliente)) {
                             //ocorreu algum problema
+                            isAlive = false;
                             break;
                         }
 
                     } else if (inFromCliente.read() == -1) {//conexao fechou
                         logger.debug("Cliente fechou a conexao");
                         logarMensagem("Cliente fechou a conexao");
+                        isAlive = false;
                         break;
                     } else {
                         logger.debug("Recebeu comando do Cliente null");
                         logarMensagem("Recebeu comando do Cliente null");
+                        isAlive = false;
                         break;
                     }
+                } else if (inFromCliente.read() == -1) {
+                    logger.debug("Cliente fechou a conexao");
+                    logarMensagem("Cliente fechou a conexao");
+                    isAlive = false;
                 }
+            } catch (EOFException ex) {
+                logger.debug("Cliente fechou a conexao");
+                logarMensagem("Cliente fechou a conexao");
+                isAlive = false;
+            } catch (IOException ex) {
+                logger.log(Level.ERROR, "Erro na conexao com o cliente", ex);
+                logarMensagem("Erro na conexao com o cliente");
+                isAlive = false;
+            } catch (ClassNotFoundException ex) {
+                logger.log(Level.ERROR, "Erro na conversao do objeto mensagem recebido do ciente", ex);
+                logarMensagem("Erro na conversao do objeto mensagem recebido do ciente");
+                isAlive = false;
             }
+        }
 
+        try {
             fecharConexao(); //encerra tudo
-        } catch (EOFException ex) {
-            logger.log(Level.INFO, "Cliente fechou a conexao");
-            logarMensagem("Cliente fechou a conexao");
         } catch (IOException ex) {
             logger.log(Level.ERROR, "Erro na conexao com o cliente", ex);
             logarMensagem("Erro na conexao com o cliente");
-        } catch (ClassNotFoundException ex) {
-            logger.log(Level.ERROR, "Erro na conversao do objeto mensagem recebido do ciente", ex);
-            logarMensagem("Erro na conversao do objeto mensagem recebido do ciente");
         }
     }
 
@@ -120,16 +139,23 @@ public class ThreadClienteCommunicTCP extends Thread {
             outToCleinte.flush();
             outToCleinte.close();
         }
-        if (clienteSocket != null && clienteSocket.isConnected()) {
+        if (clienteSocket != null) {
             clienteSocket.close();
         }
+
+        isAlive = false;
+        interrupt();
     }
 
     private void logarMensagem(String msg) {
-        logMensagens += "TCP: " + msg + "\n";
+        logMensagens.setText(logMensagens.getText() + "TCP: " + msg + "\n");
     }
 
-    public String getLogMensagens() {
-        return logMensagens;
+    public boolean isIsAlive() {
+        return isAlive;
+    }
+
+    public void setIsAlive(boolean isAlive) {
+        this.isAlive = isAlive;
     }
 }
